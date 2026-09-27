@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halcyon Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CheckCircle2, Clock, Flame, MapPin, Menu, Moon, Phone, Sun, X } from "lucide-react";
+import { motion } from "framer-motion";
+
+const __heydigiImageByPrompt: Record<string, string> = {
+  "premium bone-in ribeye steak carved into thick slices on a black ceramic plate, rosemary ash, coarse salt crystals, beef jus in a small copper pan, dark Israeli steakhouse table, shallow depth of field, dramatic ember backlight, unique hero dish photography": "https://pqxlfvscfbxbrvbiiith.supabase.co/storage/v1/object/public/deployed-sites/generated-images/3f07b9f5-e317-4578-8dfe-94087699df8b/1790546428778-23eaddc9-228a-4d36-8b03-d249163b794e.jpg",
+  "handmade lamb kebab patties stacked beside blistered pita and grilled green chili, fresh parsley and purple onion, charcoal grill marks, rustic metal tray, casual Israeli grill counter, bright overhead editorial food shot, distinctly different from steak image": "https://pqxlfvscfbxbrvbiiith.supabase.co/storage/v1/object/public/deployed-sites/generated-images/3f07b9f5-e317-4578-8dfe-94087699df8b/1790546428584-33348d21-a276-41bc-9bb3-f4cf8cdfdde1.jpg",
+  "golden chicken thigh skewers with lemon garlic glaze on long steel skewers, flames licking underneath, small bowls of tomato salad and tahini nearby, smoky open grill kitchen, diagonal composition, vivid citrus highlights, unique poultry dish photography": "https://pqxlfvscfbxbrvbiiith.supabase.co/storage/v1/object/public/deployed-sites/generated-images/3f07b9f5-e317-4578-8dfe-94087699df8b/1790546429315-c155335e-637d-4862-b0a8-09577160bc82.jpg",
+  "large butcher mixed grill platter with sliced entrecote, merguez sausage, lamb chop, charred tomatoes, smoked tahini swirl and burnt onions, shared feast on a wide wooden table, top-down restaurant editorial spread, abundant and festive, unique mixed platter image": "https://pqxlfvscfbxbrvbiiith.supabase.co/storage/v1/object/public/deployed-sites/generated-images/3f07b9f5-e317-4578-8dfe-94087699df8b/1790546429908-58dbf987-bb20-446b-8bd1-82d083842d3e.jpg"
+};
+interface MenuItem {
+  name: string;
+  cut: string;
+  price: string;
+  imagePrompt: string;
+}
+
+interface FormState {
+  name: string;
+  phone: string;
+  guests: string;
+  message: string;
+}
+
+const menuItems: MenuItem[] = [
+  {
+    name: "אנטריקוט על עצם",
+    cut: "מיושן, צרוב חזק, מוגש עם מלח גס וציר בקר",
+    price: "₪148",
+    imagePrompt: "premium bone-in ribeye steak carved into thick slices on a black ceramic plate, rosemary ash, coarse salt crystals, beef jus in a small copper pan, dark Israeli steakhouse table, shallow depth of field, dramatic ember backlight, unique hero dish photography",
+  },
+  {
+    name: "קבב הבית",
+    cut: "בשר טחון במקום, שומן כבש, עשבי בר ופיתה שרופה",
+    price: "₪68",
+    imagePrompt: "handmade lamb kebab patties stacked beside blistered pita and grilled green chili, fresh parsley and purple onion, charcoal grill marks, rustic metal tray, casual Israeli grill counter, bright overhead editorial food shot, distinctly different from steak image",
+  },
+  {
+    name: "שיפודי פרגית אש",
+    cut: "מרינדת שום־לימון, חריכה מדויקת, סלטים ליד",
+    price: "₪62",
+    imagePrompt: "golden chicken thigh skewers with lemon garlic glaze on long steel skewers, flames licking underneath, small bowls of tomato salad and tahini nearby, smoky open grill kitchen, diagonal composition, vivid citrus highlights, unique poultry dish photography",
+  },
+  {
+    name: "צלחת קצבים",
+    cut: "נתחים מתחלפים מהגריל, טחינה מעושנת וירקות שרופים",
+    price: "₪132",
+    imagePrompt: "large butcher mixed grill platter with sliced entrecote, merguez sausage, lamb chop, charred tomatoes, smoked tahini swirl and burnt onions, shared feast on a wide wooden table, top-down restaurant editorial spread, abundant and festive, unique mixed platter image",
+  },
+];
+
+const scrollToSection = (id: string) => {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
+export default function App() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [themeLight, setThemeLight] = useState(false);
+  const [form, setForm] = useState<FormState>({ name: "", phone: "", guests: "", message: "" });
+  const [errors, setErrors] = useState<Partial<FormState>>({});
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.lang = "he";
+    document.documentElement.dir = "rtl";
+    const saved = localStorage.getItem("abu-shabi-theme");
+    if (saved === "light") {
+      document.documentElement.classList.add("theme-light");
+      setThemeLight(true);
+    }
+  }, []);
+
+  const navItems = useMemo(
+    () => [
+      { label: "הבית", id: "home" },
+      { label: "התפריט", id: "menu" },
+      { label: "החוויה", id: "story" },
+      { label: "הזמנה", id: "reserve" },
+    ],
+    []
+  );
+
+  const toggleTheme = () => {
+    const next = !themeLight;
+    setThemeLight(next);
+    document.documentElement.classList.toggle("theme-light", next);
+    localStorage.setItem("abu-shabi-theme", next ? "light" : "dark");
+  };
+
+  const closeAndGo = (id: string) => {
+    setMenuOpen(false);
+    window.setTimeout(() => scrollToSection(id), 80);
+  };
+
+  const validate = () => {
+    const next: Partial<FormState> = {};
+    if (!form.name.trim()) next.name = "שם מלא נדרש";
+    if (!/^0\d{8,9}$/.test(form.phone.trim())) next.phone = "מספר טלפון ישראלי תקין נדרש";
+    if (!form.guests.trim()) next.guests = "כמה סועדים מגיעים?";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!validate()) return;
+    setSent(true);
+    setForm({ name: "", phone: "", guests: "", message: "" });
+    setErrors({});
+    window.setTimeout(() => setSent(false), 3600);
+  };
+
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-[rgb(var(--bg))] text-[rgb(var(--fg))]">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:right-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-[rgb(var(--accent))] focus:px-5 focus:py-3 focus:text-[rgb(var(--accent-fg))]"
+      >
+        דלג לתוכן
+      </a>
+
+      <header data-section-id="app-s1"
+        data-component="nav"
+        data-component-id="nav-main"
+        className="fixed inset-x-0 top-0 z-50 border-b border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))] shadow-[0_12px_60px_rgb(0_0_0_/0.28)]"
+      >
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <button
+            onClick={() => closeAndGo("home")}
+            data-component="logo"
+            data-component-id="logo-header"
+            className="group min-h-[44px] rounded-full px-2 text-right focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]"
+          >
+            <span className="block text-xs uppercase tracking-[0.28em] text-[rgb(var(--accent))]">Steak House</span>
+            <span className="font-display text-2xl font-extrabold leading-none">סטקיית אבו שבי</span>
+          </button>
+
+          <nav data-section-id="app-s2" className="hidden items-center gap-8 md:flex" aria-label="ניווט ראשי">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className="link-draw min-h-[44px] text-sm font-semibold text-[rgb(var(--fg-muted))] transition-colors hover:text-[rgb(var(--fg))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]"
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              aria-label="החלפת מצב תצוגה"
+              className="grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] transition-transform duration-200 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]"
+            >
+              {themeLight ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button
+              onClick={() => setMenuOpen(true)}
+              aria-label="פתח תפריט"
+              className="grid min-h-[44px] min-w-[44px] place-items-center rounded-full bg-[rgb(var(--accent))] text-[rgb(var(--accent-fg))] transition-transform duration-200 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))] md:hidden"
+            >
+              <Menu size={22} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div
+        className={`fixed inset-0 z-[90] bg-[rgb(var(--bg))] text-[rgb(var(--fg))] transition-transform duration-300 md:hidden ${ menuOpen ? "translate-x-0" : "translate-x-full" }`}
+        aria-hidden={!menuOpen}
+      >
+        <div className="flex h-20 items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-5">
+          <span className="font-display text-2xl font-extrabold">סטקיית אבו שבי</span>
+          <button
+            onClick={() => setMenuOpen(false)}
+            aria-label="סגור תפריט"
+            className="grid min-h-[44px] min-w-[44px] place-items-center rounded-full bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <nav data-section-id="app-s3" className="flex min-h-[calc(100vh-5rem)] flex-col justify-between bg-[rgb(var(--bg))] px-5 py-8">
+          <div className="space-y-3">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => closeAndGo(item.id)}
+                className="flex min-h-[64px] w-full items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-right font-display text-4xl font-extrabold text-[rgb(var(--fg))] transition-colors hover:text-[rgb(var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]"
+              >
+                <span>{item.label}</span>
+                <ArrowLeft size={22} />
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => closeAndGo("reserve")}
+            className="min-h-[54px] rounded-full bg-[rgb(var(--accent))] px-6 py-3 font-bold text-[rgb(var(--accent-fg))] transition-transform hover:scale-[1.02] active:scale-[0.97]"
+          >
+            להזמין שולחן
+          </button>
+        </nav>
+      </div>
+
+      <main data-section-id="app-s4" id="main">
+        <section data-section-id="app-s5"
+          id="home"
+          data-component="hero"
+          data-component-id="hero-cinematic-home"
+          className="relative min-h-screen overflow-hidden pt-20"
+        >
+          <img data-image-id="app-img1"
+            src="https://pqxlfvscfbxbrvbiiith.supabase.co/storage/v1/object/public/deployed-sites/generated-images/3f07b9f5-e317-4578-8dfe-94087699df8b/1790544226241-b036c411-1066-43c4-b4e2-c7cb80ea502c.jpg"
+            data-ai-image-prompt="wide cinematic hero shot of an Israeli charcoal steakhouse at night, chef turning steaks over open flames, smoke drifting across a dark dining room, warm tungsten highlights, strong negative space for Hebrew headline, low-angle editorial restaurant photography, warm Kodak Portra 400 grade, golden sunlit tones, soft filmic contrast"
+            alt="גריל פחמים בסטקיית אבו שבי"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(var(--bg))_0%,rgb(var(--bg)/0.84)_36%,rgb(var(--bg)/0.18)_100%)]" />
+          <div className="grain absolute inset-0" />
+          <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-end px-4 pb-16 pt-20 sm:px-6 md:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:pb-24">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="max-w-[760px]"
+            >
+              <span className="eyebrow">אש פתוחה · נתחים רציניים · אירוח מקומי</span>
+              <h1 className="display-primary mt-5 max-w-full overflow-wrap-anywhere break-words font-display font-extrabold">
+                בשר שמדבר לפני שאתה מספיק להזמין.
+              </h1>
+              <p className="mt-7 max-w-2xl text-xl leading-[1.55] text-[rgb(var(--fg-muted))] md:text-2xl">
+                סטקיית אבו שבי מגישה גריל ישראלי גדול, מעושן ומדויק — בלי הצגות, רק אש, סכין טובה ושולחן שחוזרים אליו.
+              </p>
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={() => scrollToSection("reserve")}
+                  data-component="cta"
+                  data-component-id="cta-hero-reserve"
+                  className="min-h-[52px] rounded-full bg-[rgb(var(--accent))] px-7 py-3 font-bold text-[rgb(var(--accent-fg))] shadow-[0_18px_50px_rgb(var(--accent)/0.28)] transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]"
+                >
+                  להזמין שולחן
+                </button>
+                <button
+                  onClick={() => scrollToSection("menu")}
+                  data-component="cta"
+                  data-component-id="cta-hero-menu"
+                  className="min-h-[52px] rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-7 py-3 font-bold text-[rgb(var(--fg))] transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]"
+                >
+                  לראות תפריט
+                </button>
+              </div>
+            </motion.div>
+            <aside data-section-id="app-s6" className="mt-12 hidden border-r border-[rgb(var(--border))] pr-6 md:block">
+              <p className="text-xs uppercase tracking-[0.28em] text-[rgb(var(--accent))]">פתוח היום</p>
+              <p className="mt-3 font-display text-5xl font-extrabold">12:00–23:30</p>
+              <p className="mt-4 max-w-xs text-[rgb(var(--fg-muted))]">בצהריים זה עסקי. בערב זה טקס.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section data-section-id="app-s7"
+          id="menu"
+          data-component="features"
+          data-component-id="menu-cuts"
+          className="bg-[rgb(var(--bg))] px-4 py-16 sm:px-6 md:py-24 lg:px-8"
+        >
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-8 md:grid-cols-[0.78fr_1.22fr] md:items-end">
+              <div>
+                <span className="eyebrow">תפריט אש</span>
+                <h2 className="mt-4 font-display text-4xl font-extrabold leading-tight md:text-6xl">הנתחים שעושים רעש בשולחן.</h2>
+              </div>
+              <p className="max-w-2xl text-lg leading-[1.6] text-[rgb(var(--fg-muted))]">
+                כל מנה בנויה סביב חריכה, עסיסיות וקצב נכון. לא תפריט ארוך — תפריט שמבין מה הוא עושה.
+              </p>
+            </div>
+
+            <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-6">
+              {menuItems.map((item, index) => (
+                <article data-section-id="app-s8"
+                  key={item.name}
+                  data-component="feature-card"
+                  data-component-id={`menu-card-${item.name.replace(/\s+/g, "-")}`}
+                  className={`group overflow-hidden rounded-[var(--radius-lg)] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] ${
+                    index === 0 || index === 3 ? "md:col-span-3" : "md:col-span-3 lg:col-span-3"
+                  }`}
+                >
+                  <div className="grid md:grid-cols-[0.95fr_1.05fr]">
+                    <img data-image-id="app-img2"
+                      src={__heydigiImageByPrompt[item.imagePrompt]}
+                      data-ai-image-prompt={item.imagePrompt}
+                      alt={item.name}
+                      className="h-72 w-full object-cover transition-transform duration-700 group-hover:scale-105 md:h-full"
+                    />
+                    <div className="flex min-h-[280px] flex-col justify-between p-6 md:p-8">
+                      <div>
+                        <div className="flex items-center justify-between gap-5">
+                          <span className="text-xs font-bold uppercase tracking-[0.25em] text-[rgb(var(--accent))]">
+                            0{index + 1}
+                          </span>
+                          <span className="font-display text-3xl font-extrabold">{item.price}</span>
+                        </div>
+                        <h3 className="mt-8 font-display text-3xl font-extrabold">{item.name}</h3>
+                        <p className="mt-3 text-[rgb(var(--fg-muted))]">{item.cut}</p>
+                      </div>
+                      <button
+                        onClick={() => scrollToSection("reserve")}
+                        className="mt-8 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[rgb(var(--surface-2))] px-5 font-bold transition-transform duration-200 hover:scale-[1.02] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))]"
+                      >
+                        להזמין את המנה <ArrowLeft size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section data-section-id="app-s9"
+          id="story"
+          data-component="section"
+          data-component-id="story-fire"
+          className="relative overflow-hidden bg-[rgb(var(--surface))] px-4 py-20 sm:px-6 md:py-32 lg:px-8"
+        >
+          <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[0.9fr_1.1fr] md:items-center">
+            <div className="relative">
+              <img data-image-id="app-img3"
+                src="https://pqxlfvscfbxbrvbiiith.supabase.co/storage/v1/object/public/deployed-sites/generated-images/3f07b9f5-e317-4578-8dfe-94087699df8b/1790544227715-c3417079-7309-4658-85ef-3c867a513543.jpg"
+                data-ai-image-prompt="documentary portrait of a steakhouse grill master in a smoky Israeli kitchen, hands near cast iron grill, warm side window light, candid 35mm reportage feeling, intimate confident mood, warm Kodak Portra 400 grade, golden sunlit tones, soft filmic contrast"
+                alt="הגרילמן של סטקיית אבו שבי"
+                className="aspect-[4/5] w-full rounded-[var(--radius-lg)] object-cover"
+              />
+              <div className="absolute -bottom-6 -left-4 max-w-[230px] rounded-[var(--radius)] bg-[rgb(var(--accent))] p-5 text-[rgb(var(--accent-fg))] shadow-[0_24px_70px_rgb(0_0_0_/0.35)]">
+                <Flame className="mb-4" size={28} />
+                <p className="font-bold leading-snug">האש לא תפאורה. היא הטעם הראשון.</p>
+              </div>
+            </div>
+            <div>
+              <span className="eyebrow">החוויה</span>
+              <h2 className="mt-4 font-display text-4xl font-extrabold leading-tight md:text-6xl">
+                מקום שנכנסים אליו רעבים ויוצאים ממנו עם סיפור.
+              </h2>
+              <p className="mt-7 text-lg leading-[1.6] text-[rgb(var(--fg-muted))]">
+                העיצוב החדש מכוון לקולנועיות של מסעדת לילה: אש, עשן, שולחן כהה, אור חם ופוקוס חד על הבשר. התפריט, הניווט והקריאות לפעולה יושבים עכשיו על משטחים אטומים וברורים כדי שלא תאבד שום פעולה בדרך.
+              </p>
+              <div className="mt-10 grid gap-4 sm:grid-cols-3">
+                {[
+                  ["24h", "יישון לנתחים נבחרים"],
+                  ["100%", "גריל פחמים"],
+                  ["0", "קיצורי דרך בטעם"],
+                ].map(([num, label]) => (
+                  <div
+                    key={label}
+                    data-component="stat-card"
+                    data-component-id={`stat-${label.replace(/\s+/g, "-")}`}
+                    className="rounded-[var(--radius)] border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-5"
+                  >
+                    <div className="font-display text-4xl font-extrabold text-[rgb(var(--accent))]">{num}</div>
+                    <div className="mt-2 text-sm text-[rgb(var(--fg-muted))]">{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section data-section-id="app-s10"
+          id="reserve"
+          data-component="form"
+          data-component-id="reservation-form"
+          className="px-4 py-16 sm:px-6 md:py-24 lg:px-8"
+        >
+          <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[0.8fr_1.2fr]">
+            <div className="rounded-[var(--radius-lg)] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-7 md:p-10">
+              <span className="eyebrow">בואו רעבים</span>
+              <h2 className="mt-4 font-display text-4xl font-extrabold leading-tight md:text-5xl">שולחן, בשר, אש.</h2>
+              <div className="mt-8 space-y-5 text-[rgb(var(--fg-muted))]">
+                <p className="flex gap-3"><MapPin className="shrink-0 text-[rgb(var(--accent))]" size={21} /> רחוב הראשי 18, מרכז העיר</p>
+                <p className="flex gap-3"><Clock className="shrink-0 text-[rgb(var(--accent))]" size={21} /> א׳–ה׳ 12:00–23:30 · ו׳ 11:00–16:00</p>
+                <p className="flex gap-3"><Phone className="shrink-0 text-[rgb(var(--accent))]" size={21} /> 03-555-1848</p>
+              </div>
+            </div>
+
+            <form onSubmit={submit} noValidate className="rounded-[var(--radius-lg)] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 md:p-10">
+              {sent && (
+                <div className="mb-6 flex items-center gap-3 rounded-[var(--radius)] bg-[rgb(var(--success)/0.14)] p-4 text-[rgb(var(--fg))]">
+                  <CheckCircle2 className="text-[rgb(var(--success))]" size={22} />
+                  <span className="font-semibold">הבקשה נקלטה. הצוות יחזור אליכם לאישור.</span>
+                </div>
+              )}
+              <div className="grid gap-5 md:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-bold">שם מלא <b className="text-[rgb(var(--accent))]">*</b></span>
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    autoComplete="name"
+                    aria-required="true"
+                    className="mt-2 h-12 w-full rounded-[var(--radius-sm)] border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 text-[rgb(var(--fg))] outline-none transition focus:border-[rgb(var(--accent))] focus:ring-2 focus:ring-[rgb(var(--accent)/0.35)]"
+                  />
+                  {errors.name && <span className="mt-1 block text-sm text-[rgb(var(--danger))]">{errors.name}</span>}
+                </label>
+                <label className="block">
+                  <span className="text-sm font-bold">טלפון <b className="text-[rgb(var(--accent))]">*</b></span>
+                  <input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    type="tel"
+                    autoComplete="tel"
+                    aria-required="true"
+                    className="mt-2 h-12 w-full rounded-[var(--radius-sm)] border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 text-[rgb(var(--fg))] outline-none transition focus:border-[rgb(var(--accent))] focus:ring-2 focus:ring-[rgb(var(--accent)/0.35)]"
+                  />
+                  {errors.phone && <span className="mt-1 block text-sm text-[rgb(var(--danger))]">{errors.phone}</span>}
+                </label>
+                <label className="block">
+                  <span className="text-sm font-bold">מספר סועדים <b className="text-[rgb(var(--accent))]">*</b></span>
+                  <input
+                    value={form.guests}
+                    onChange={(e) => setForm({ ...form, guests: e.target.value })}
+                    inputMode="numeric"
+                    aria-required="true"
+                    className="mt-2 h-12 w-full rounded-[var(--radius-sm)] border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 text-[rgb(var(--fg))] outline-none transition focus:border-[rgb(var(--accent))] focus:ring-2 focus:ring-[rgb(var(--accent)/0.35)]"
+                  />
+                  {errors.guests && <span className="mt-1 block text-sm text-[rgb(var(--danger))]">{errors.guests}</span>}
+                </label>
+                <label className="block">
+                  <span className="text-sm font-bold">הערה</span>
+                  <input
+                    value={form.message}
+                    onChange={(e) => setForm({ ...form, message: e.target.value })}
+                    className="mt-2 h-12 w-full rounded-[var(--radius-sm)] border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 text-[rgb(var(--fg))] outline-none transition focus:border-[rgb(var(--accent))] focus:ring-2 focus:ring-[rgb(var(--accent)/0.35)]"
+                  />
+                </label>
+              </div>
+              <button
+                type="submit"
+                data-component="cta"
+                data-component-id="cta-reservation-submit"
+                className="mt-7 min-h-[54px] w-full rounded-full bg-[rgb(var(--accent))] px-7 py-3 font-bold text-[rgb(var(--accent-fg))] shadow-[0_18px_50px_rgb(var(--accent)/0.22)] transition-transform duration-200 hover:scale-[1.01] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--accent))] md:w-auto"
+              >
+                שלחו בקשת הזמנה
+              </button>
+            </form>
+          </div>
+        </section>
+      </main>
+
+      <footer data-section-id="app-s11"
+        data-component="footer"
+        data-component-id="footer-main"
+        className="border-t border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-10 sm:px-6 lg:px-8"
+      >
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-[rgb(var(--fg-muted))] md:flex-row md:items-center md:justify-between">
+          <p className="font-display text-2xl font-extrabold text-[rgb(var(--fg))]">סטקיית אבו שבי</p>
+          <p>בשר טוב. אש אמיתית. שולחן שלא שוכחים.</p>
+          <button
+            onClick={() => scrollToSection("home")}
+            className="min-h-[44px] rounded-full border border-[rgb(var(--border))] px-5 font-bold text-[rgb(var(--fg))] transition-colors hover:bg-[rgb(var(--surface-2))]"
+          >
+            חזרה למעלה
+          </button>
+        </div>
+      </footer>
+    </div>
+  );
+}
+  <script src="script.js"></script>
+</body>
+</html>
